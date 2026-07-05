@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { X } from "lucide-react";
 import { supabase, DRINK_PHOTOS_BUCKET } from "@/lib/supabase/client";
 import { getPhotoUrl, photoStoragePath } from "@/lib/photos";
+import { getErrorMessage } from "@/lib/utils";
 
 interface PhotoUploaderProps {
   profileId: string;
@@ -38,9 +39,7 @@ export function PhotoUploader({
       }
       onChange([...value, ...uploadedPaths]);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "사진 업로드에 실패했습니다.",
-      );
+      setError(getErrorMessage(err, "사진 업로드에 실패했습니다."));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { getErrorMessage } from "@/lib/utils";
 import {
   CATEGORY_LABELS,
   type Category,
@@ -162,7 +163,7 @@ export function TastingForm({
       router.push(`/drink/${tastingId}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "저장하지 못했습니다.");
+      setError(getErrorMessage(err, "저장하지 못했습니다."));
     } finally {
       setSubmitting(false);
     }

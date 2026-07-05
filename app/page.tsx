@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useIdentity } from "@/lib/identity";
 import { fetchTastings, type SortOption } from "@/lib/queries";
 import type { Category, TastingSearchRow } from "@/lib/types";
+import { getErrorMessage } from "@/lib/utils";
 import { DrinkCard } from "@/components/drink-card";
 import { SearchBar } from "@/components/search-bar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,9 +66,7 @@ export default function HomePage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "기록을 불러오지 못했습니다.",
-          );
+          setError(getErrorMessage(err, "기록을 불러오지 못했습니다."));
         }
       })
       .finally(() => {

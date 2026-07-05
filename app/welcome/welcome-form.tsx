@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ensureProfile } from "@/lib/identity";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,7 @@ export function WelcomeForm() {
       await ensureProfile(displayName);
       router.push(searchParams.get("next") ?? "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "닉네임을 확인하지 못했습니다.");
+      setError(getErrorMessage(err, "닉네임을 확인하지 못했습니다."));
     } finally {
       setSubmitting(false);
     }
