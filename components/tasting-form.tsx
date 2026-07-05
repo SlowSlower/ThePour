@@ -26,13 +26,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface TastingFormProps {
   profileId: string;
@@ -45,6 +38,8 @@ interface TastingFormProps {
 function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
+
+const CATEGORY_OPTIONS: Category[] = ["wine", "whiskey", "other"];
 
 export function TastingForm({
   profileId,
@@ -171,8 +166,18 @@ export function TastingForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      <section className="space-y-2">
+        <Label>사진</Label>
+        <PhotoUploader
+          profileId={profileId}
+          tastingId={tastingId}
+          value={photoPaths}
+          onChange={setPhotoPaths}
+        />
+      </section>
+
       <section className="space-y-3">
-        <Label>술 이름</Label>
+        <Label>술 이름 *</Label>
         {mode === "edit" ? (
           <div className="rounded-md border p-3">
             <p className="font-medium">{product?.name}</p>
@@ -191,36 +196,37 @@ export function TastingForm({
         )}
 
         {mode === "create" && !selectedProduct && (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-3">
             <div className="space-y-1">
-              <Label>종류</Label>
-              <Select
-                value={newCategory}
-                onValueChange={(v) => setNewCategory(v as Category)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="wine">와인</SelectItem>
-                  <SelectItem value="whiskey">위스키</SelectItem>
-                  <SelectItem value="other">기타</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>종류 *</Label>
+              <div className="flex gap-2">
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <Button
+                    key={cat}
+                    type="button"
+                    variant={newCategory === cat ? "default" : "outline"}
+                    onClick={() => setNewCategory(cat)}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label>생산자·증류소</Label>
-              <Input
-                value={newProducer}
-                onChange={(event) => setNewProducer(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>지역</Label>
-              <Input
-                value={newRegion}
-                onChange={(event) => setNewRegion(event.target.value)}
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label>생산자·증류소</Label>
+                <Input
+                  value={newProducer}
+                  onChange={(event) => setNewProducer(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>지역</Label>
+                <Input
+                  value={newRegion}
+                  onChange={(event) => setNewRegion(event.target.value)}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -250,11 +256,10 @@ export function TastingForm({
             type="date"
             value={tastedOn}
             onChange={(event) => setTastedOn(event.target.value)}
-            required
           />
         </div>
         <div className="space-y-1">
-          <Label>별점</Label>
+          <Label>별점 *</Label>
           <RatingStars value={rating} onChange={setRating} size={24} />
         </div>
       </section>
@@ -331,16 +336,6 @@ export function TastingForm({
       <section className="space-y-2">
         <Label>태그</Label>
         <TagInput value={tags} onChange={setTags} placeholder="품종, 캐스크타입 등" />
-      </section>
-
-      <section className="space-y-2">
-        <Label>사진</Label>
-        <PhotoUploader
-          profileId={profileId}
-          tastingId={tastingId}
-          value={photoPaths}
-          onChange={setPhotoPaths}
-        />
       </section>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
