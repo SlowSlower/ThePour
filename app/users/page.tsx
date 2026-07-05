@@ -14,7 +14,7 @@ export default function UsersPage() {
     let cancelled = false;
     supabase
       .from("profiles")
-      .select("*")
+      .select("id, display_name, created_at")
       .order("display_name")
       .then(({ data }) => {
         if (!cancelled) {

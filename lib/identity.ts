@@ -25,24 +25,56 @@ export function clearCurrentProfile() {
   window.localStorage.removeItem(STORAGE_KEY);
 }
 
-// Passwordless MVP identity: looks up a profile by display name, creating one
-// if it doesn't exist yet. Anyone can "become" an existing display name since
-// there is no password — acceptable for a small trusted group, to be replaced
-// once real login is added.
-export async function ensureProfile(displayName: string): Promise<Profile> {
+const PROFILE_COLUMNS = "id, display_name, created_at";
+
+// Passwordless-login-free MVP identity, now guarded by a PIN: looks up a
+// profile by display name, creating one if it doesn't exist yet. The PIN is
+// verified (or, for legacy profiles created before this existed, claimed)
+// via security-definer Postgres functions that hash it with pgcrypto — the
+// raw PIN and its hash never round-trip back to the client.
+export async function ensureProfile(
+  displayName: string,
+  pin: string,
+): Promise<Profile> {
   const trimmed = displayName.trim();
   if (!trimmed) {
     throw new Error("닉네임을 입력해주세요.");
   }
+  if (!pin || pin.length < 4) {
+    throw new Error("PIN은 4자 이상 입력해주세요.");
+  }
 
   const { data: existing, error: lookupError } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_COLUMNS)
     .eq("display_name", trimmed)
     .maybeSingle();
 
   if (lookupError) throw lookupError;
+
   if (existing) {
+    const { data: hasPin, error: hasPinError } = await supabase.rpc(
+      "profile_has_pin",
+      { p_profile_id: existing.id },
+    );
+    if (hasPinError) throw hasPinError;
+
+    if (hasPin) {
+      const { data: verified, error: verifyError } = await supabase.rpc(
+        "verify_profile_pin",
+        { p_profile_id: existing.id, p_pin: pin },
+      );
+      if (verifyError) throw verifyError;
+      if (!verified) throw new Error("PIN이 일치하지 않습니다.");
+    } else {
+      // Legacy profile from before PINs existed — claim it with this PIN.
+      const { error: setPinError } = await supabase.rpc("set_profile_pin", {
+        p_profile_id: existing.id,
+        p_pin: pin,
+      });
+      if (setPinError) throw setPinError;
+    }
+
     setCurrentProfile(existing);
     return existing;
   }
@@ -50,10 +82,16 @@ export async function ensureProfile(displayName: string): Promise<Profile> {
   const { data: created, error: insertError } = await supabase
     .from("profiles")
     .insert({ display_name: trimmed })
-    .select("*")
+    .select(PROFILE_COLUMNS)
     .single();
-
   if (insertError) throw insertError;
+
+  const { error: setPinError } = await supabase.rpc("set_profile_pin", {
+    p_profile_id: created.id,
+    p_pin: pin,
+  });
+  if (setPinError) throw setPinError;
+
   setCurrentProfile(created);
   return created;
 }

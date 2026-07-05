@@ -19,7 +19,11 @@ export default function UserProfilePage() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      supabase.from("profiles").select("*").eq("id", params.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, display_name, created_at")
+        .eq("id", params.id)
+        .maybeSingle(),
       supabase
         .from("tasting_search")
         .select("*")
