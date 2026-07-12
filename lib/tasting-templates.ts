@@ -26,6 +26,28 @@ export const CHARACTERISTICS_BY_CATEGORY: Record<Category, CharacteristicDef[]> 
   ],
 };
 
+// Curated starting points for the region/tag "pick again" chips in the form.
+// Merged at render time with whatever values have actually been typed in by
+// users so far (see lib/queries.ts#fetchColumnSuggestions / fetchTagSuggestions).
+export const REGION_SUGGESTIONS_BY_CATEGORY: Record<Category, string[]> = {
+  wine: [
+    "보르도", "부르고뉴", "토스카나", "피에몬테", "리오하",
+    "나파밸리", "바로사밸리", "말보로",
+  ],
+  whiskey: ["스코틀랜드", "아일랜드", "아메리카", "일본", "대만", "캐나다"],
+  other: [],
+};
+
+export const TAG_SUGGESTIONS_BY_CATEGORY: Record<Category, string[]> = {
+  wine: [
+    "카베르네 소비뇽", "피노누아", "메를로", "쉬라즈", "샤르도네", "리슬링",
+  ],
+  whiskey: [
+    "싱글몰트", "블렌디드", "버번", "캐스크스트렝스", "셰리캐스크", "버번캐스크",
+  ],
+  other: [],
+};
+
 export type TastingNoteSection = "nose" | "palate" | "finish";
 
 export const TASTING_NOTE_SECTION_LABELS: Record<TastingNoteSection, string> = {

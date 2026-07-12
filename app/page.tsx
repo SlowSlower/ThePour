@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useIdentity } from "@/lib/identity";
-import { fetchTastings, type SortOption } from "@/lib/queries";
+import {
+  fetchTastings,
+  type RepurchaseFilter,
+  type SortOption,
+} from "@/lib/queries";
 import type { Category, TastingSearchRow } from "@/lib/types";
 import { getErrorMessage } from "@/lib/utils";
 import { DrinkCard } from "@/components/drink-card";
@@ -23,6 +27,7 @@ export default function HomePage() {
   const { profile } = useIdentity();
   const [scope, setScope] = useState<Scope>("all");
   const [category, setCategory] = useState<Category | "all">("all");
+  const [repurchase, setRepurchase] = useState<RepurchaseFilter>("all");
   const [sort, setSort] = useState<SortOption>("recent");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -44,9 +49,19 @@ export default function HomePage() {
       profileId: scope === "mine" ? profile?.id : undefined,
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      repurchase,
       sort,
     }),
-    [debouncedQuery, category, scope, profile?.id, minPrice, maxPrice, sort],
+    [
+      debouncedQuery,
+      category,
+      scope,
+      profile?.id,
+      minPrice,
+      maxPrice,
+      repurchase,
+      sort,
+    ],
   );
 
   useEffect(() => {
@@ -100,6 +115,19 @@ export default function HomePage() {
               <SelectItem value="wine">와인</SelectItem>
               <SelectItem value="whiskey">위스키</SelectItem>
               <SelectItem value="other">기타</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={repurchase}
+            onValueChange={(v) => setRepurchase(v as RepurchaseFilter)}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="재구매 의사" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">재구매 전체</SelectItem>
+              <SelectItem value="yes">재구매 의사 있음</SelectItem>
+              <SelectItem value="no">재구매 의사 없음</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>

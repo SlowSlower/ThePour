@@ -43,6 +43,7 @@ export interface Tasting {
   characteristics: Characteristics;
   tags: string[];
   photo_paths: string[];
+  would_repurchase: boolean | null;
   created_at: string;
   updated_at: string;
 }

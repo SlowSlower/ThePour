@@ -9,9 +9,16 @@ interface TagInputProps {
   value: string[];
   onChange: (tags: string[]) => void;
   placeholder?: string;
+  /** Previously-used/curated tags shown as one-click "add" chips. */
+  suggestions?: string[];
 }
 
-export function TagInput({ value, onChange, placeholder }: TagInputProps) {
+export function TagInput({
+  value,
+  onChange,
+  placeholder,
+  suggestions = [],
+}: TagInputProps) {
   const [draft, setDraft] = useState("");
 
   function commit() {
@@ -21,6 +28,10 @@ export function TagInput({ value, onChange, placeholder }: TagInputProps) {
     }
     setDraft("");
   }
+
+  const pickableSuggestions = suggestions
+    .filter((tag) => !value.includes(tag))
+    .slice(0, 12);
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" || event.key === ",") {
@@ -56,6 +67,20 @@ export function TagInput({ value, onChange, placeholder }: TagInputProps) {
         onBlur={commit}
         placeholder={placeholder ?? "태그 입력 후 Enter"}
       />
+      {pickableSuggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {pickableSuggestions.map((tag) => (
+            <Badge
+              key={tag}
+              variant="outline"
+              className="cursor-pointer select-none"
+              onClick={() => onChange([...value, tag])}
+            >
+              + {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

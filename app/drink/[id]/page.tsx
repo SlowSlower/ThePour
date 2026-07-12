@@ -154,7 +154,14 @@ export default function DrinkDetailPage() {
       )}
 
       <div className="flex items-center justify-between">
-        {row.rating != null && <RatingStars value={row.rating} size={22} />}
+        <div className="flex items-center gap-2">
+          {row.rating != null && <RatingStars value={row.rating} size={22} />}
+          {row.would_repurchase != null && (
+            <Badge variant={row.would_repurchase ? "default" : "outline"}>
+              재구매 의사 {row.would_repurchase ? "있음" : "없음"}
+            </Badge>
+          )}
+        </div>
         <div className="text-right text-sm text-muted-foreground">
           <UserBadge profileId={row.profile_id} displayName={row.author_name} />
           <div>{row.tasted_on}</div>

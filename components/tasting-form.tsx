@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { getErrorMessage } from "@/lib/utils";
+import { fetchColumnSuggestions, fetchTagSuggestions } from "@/lib/queries";
 import {
   CATEGORY_LABELS,
   type Category,
@@ -13,19 +14,35 @@ import {
 } from "@/lib/types";
 import {
   CHARACTERISTICS_BY_CATEGORY,
+  REGION_SUGGESTIONS_BY_CATEGORY,
+  TAG_SUGGESTIONS_BY_CATEGORY,
   TASTING_TAGS_BY_CATEGORY,
   TASTING_NOTE_SECTION_LABELS,
 } from "@/lib/tasting-templates";
 import { ProductSearch } from "@/components/product-search";
 import { TastingNoteSection } from "@/components/tasting-note-section";
 import { CharacteristicSliders } from "@/components/characteristic-sliders";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { TagInput } from "@/components/tag-input";
+import { SuggestInput } from "@/components/suggest-input";
 import { RatingStars } from "@/components/rating-stars";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+
+function mergeSuggestions(curated: string[], used: string[]): string[] {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const value of [...used, ...curated]) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      merged.push(value);
+    }
+  }
+  return merged;
+}
 
 interface TastingFormProps {
   profileId: string;
@@ -86,12 +103,47 @@ export function TastingForm({
   const [photoPaths, setPhotoPaths] = useState<string[]>(
     initial?.photo_paths ?? [],
   );
+  const [wouldRepurchase, setWouldRepurchase] = useState<boolean | null>(
+    initial?.would_repurchase ?? null,
+  );
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [usedRegions, setUsedRegions] = useState<string[]>([]);
+  const [usedProducers, setUsedProducers] = useState<string[]>([]);
+  const [usedPlaces, setUsedPlaces] = useState<string[]>([]);
+  const [usedTags, setUsedTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchColumnSuggestions("products", "region").then(setUsedRegions);
+    fetchColumnSuggestions("products", "producer").then(setUsedProducers);
+    fetchColumnSuggestions("tastings", "purchase_place").then(setUsedPlaces);
+    fetchTagSuggestions().then(setUsedTags);
+  }, []);
+
   const tagLists = TASTING_TAGS_BY_CATEGORY[effectiveCategory];
   const characteristicDefs = CHARACTERISTICS_BY_CATEGORY[effectiveCategory];
+  const regionSuggestions = mergeSuggestions(
+    REGION_SUGGESTIONS_BY_CATEGORY[effectiveCategory],
+    usedRegions,
+  );
+  const tagSuggestions = mergeSuggestions(
+    TAG_SUGGESTIONS_BY_CATEGORY[effectiveCategory],
+    usedTags,
+  );
+
+  const hasOptionalData = Boolean(
+    purchasedOn ||
+      purchasePlace ||
+      purchasePrice ||
+      noseNote ||
+      palateNote ||
+      finishNote ||
+      overallNote ||
+      tags.length > 0 ||
+      Object.keys(characteristics).length > 0,
+  );
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -140,6 +192,7 @@ export function TastingForm({
         characteristics,
         tags,
         photo_paths: photoPaths,
+        would_repurchase: wouldRepurchase,
       };
 
       if (mode === "create") {
@@ -215,16 +268,18 @@ export function TastingForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>생산자·증류소</Label>
-                <Input
+                <SuggestInput
                   value={newProducer}
-                  onChange={(event) => setNewProducer(event.target.value)}
+                  onChange={setNewProducer}
+                  suggestions={usedProducers}
                 />
               </div>
               <div className="space-y-1">
                 <Label>지역</Label>
-                <Input
+                <SuggestInput
                   value={newRegion}
-                  onChange={(event) => setNewRegion(event.target.value)}
+                  onChange={setNewRegion}
+                  suggestions={regionSuggestions}
                 />
               </div>
             </div>
@@ -262,39 +317,67 @@ export function TastingForm({
           <Label>별점 *</Label>
           <RatingStars value={rating} onChange={setRating} size={24} />
         </div>
-      </section>
-
-      <section className="space-y-2 rounded-md border p-4">
-        <p className="text-sm font-medium">구입 정보 (선택)</p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label>구입일</Label>
-            <Input
-              type="date"
-              value={purchasedOn}
-              onChange={(event) => setPurchasedOn(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>구입처</Label>
-            <Input
-              value={purchasePlace}
-              onChange={(event) => setPurchasePlace(event.target.value)}
-              placeholder="매장/사이트명"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>구입 가격</Label>
-            <Input
-              type="number"
-              value={purchasePrice}
-              onChange={(event) => setPurchasePrice(event.target.value)}
-            />
+        <div className="space-y-1">
+          <Label>재구매 의사</Label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={wouldRepurchase === true ? "default" : "outline"}
+              onClick={() =>
+                setWouldRepurchase(wouldRepurchase === true ? null : true)
+              }
+            >
+              예
+            </Button>
+            <Button
+              type="button"
+              variant={wouldRepurchase === false ? "default" : "outline"}
+              onClick={() =>
+                setWouldRepurchase(wouldRepurchase === false ? null : false)
+              }
+            >
+              아니오
+            </Button>
           </div>
         </div>
       </section>
 
-      <section className="space-y-6">
+      <CollapsibleSection
+        title="추가 정보 (선택)"
+        description="구입 정보 · 테이스팅 노트 · 특성 · 태그"
+        defaultOpen={hasOptionalData}
+      >
+        <div className="space-y-2">
+          <p className="text-sm font-medium">구입 정보</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label>구입일</Label>
+              <Input
+                type="date"
+                value={purchasedOn}
+                onChange={(event) => setPurchasedOn(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>구입처</Label>
+              <SuggestInput
+                value={purchasePlace}
+                onChange={setPurchasePlace}
+                suggestions={usedPlaces}
+                placeholder="매장/사이트명"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>구입 가격</Label>
+              <Input
+                type="number"
+                value={purchasePrice}
+                onChange={(event) => setPurchasePrice(event.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
         <TastingNoteSection
           label={TASTING_NOTE_SECTION_LABELS.nose}
           tags={tagLists.nose}
@@ -322,21 +405,26 @@ export function TastingForm({
             placeholder="자유롭게 총평을 남겨보세요"
           />
         </div>
-      </section>
 
-      <section className="space-y-2">
-        <Label>특성</Label>
-        <CharacteristicSliders
-          defs={characteristicDefs}
-          value={characteristics}
-          onChange={setCharacteristics}
-        />
-      </section>
+        <div className="space-y-2">
+          <Label>특성</Label>
+          <CharacteristicSliders
+            defs={characteristicDefs}
+            value={characteristics}
+            onChange={setCharacteristics}
+          />
+        </div>
 
-      <section className="space-y-2">
-        <Label>태그</Label>
-        <TagInput value={tags} onChange={setTags} placeholder="품종, 캐스크타입 등" />
-      </section>
+        <div className="space-y-2">
+          <Label>태그</Label>
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            placeholder="품종, 캐스크타입 등"
+            suggestions={tagSuggestions}
+          />
+        </div>
+      </CollapsibleSection>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

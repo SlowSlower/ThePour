@@ -21,6 +21,7 @@ import {
 } from "recharts";
 
 type Scope = "all" | "mine";
+type RegionSort = "rating" | "repurchase";
 
 const CATEGORY_COLORS: Record<Category, string> = {
   wine: "#7c2d12",
@@ -33,6 +34,7 @@ export default function StatsPage() {
   const [scope, setScope] = useState<Scope>("all");
   const [rows, setRows] = useState<TastingSearchRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [regionSort, setRegionSort] = useState<RegionSort>("rating");
 
   useEffect(() => {
     if (scope === "mine" && !profile) {
@@ -104,6 +106,49 @@ export default function StatsPage() {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
   }, [rows]);
+
+  const regionStats = useMemo(() => {
+    const byRegion = new Map<
+      string,
+      { count: number; ratingSum: number; ratingCount: number; repurchaseYes: number; repurchaseAnswered: number }
+    >();
+    for (const r of rows) {
+      const region = r.region?.trim();
+      if (!region) continue;
+      const entry = byRegion.get(region) ?? {
+        count: 0,
+        ratingSum: 0,
+        ratingCount: 0,
+        repurchaseYes: 0,
+        repurchaseAnswered: 0,
+      };
+      entry.count += 1;
+      if (r.rating != null) {
+        entry.ratingSum += r.rating;
+        entry.ratingCount += 1;
+      }
+      if (r.would_repurchase != null) {
+        entry.repurchaseAnswered += 1;
+        if (r.would_repurchase) entry.repurchaseYes += 1;
+      }
+      byRegion.set(region, entry);
+    }
+    const list = Array.from(byRegion.entries()).map(([region, entry]) => ({
+      region,
+      count: entry.count,
+      avgRating: entry.ratingCount > 0 ? entry.ratingSum / entry.ratingCount : null,
+      repurchaseRate:
+        entry.repurchaseAnswered > 0
+          ? entry.repurchaseYes / entry.repurchaseAnswered
+          : null,
+    }));
+    return list.sort((a, b) => {
+      if (regionSort === "rating") {
+        return (b.avgRating ?? -1) - (a.avgRating ?? -1);
+      }
+      return (b.repurchaseRate ?? -1) - (a.repurchaseRate ?? -1);
+    });
+  }, [rows, regionSort]);
 
   return (
     <div className="space-y-8">
@@ -196,6 +241,56 @@ export default function StatsPage() {
                   <Badge key={tag} variant="secondary">
                     {tag} ({count})
                   </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium">지역별 순위</h2>
+              <Tabs
+                value={regionSort}
+                onValueChange={(v) => setRegionSort(v as RegionSort)}
+              >
+                <TabsList>
+                  <TabsTrigger value="rating">별점순</TabsTrigger>
+                  <TabsTrigger value="repurchase">재구매율순</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            {regionStats.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                지역 정보가 있는 기록이 없어요.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {regionStats.map((r) => (
+                  <div
+                    key={r.region}
+                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">{r.region}</p>
+                      <p className="text-xs text-muted-foreground">
+                        기록 {r.count}개
+                      </p>
+                    </div>
+                    <div className="flex gap-4 text-right">
+                      <div>
+                        <p className="text-xs text-muted-foreground">평균 평점</p>
+                        <p>{r.avgRating != null ? r.avgRating.toFixed(2) : "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">재구매율</p>
+                        <p>
+                          {r.repurchaseRate != null
+                            ? `${Math.round(r.repurchaseRate * 100)}%`
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
