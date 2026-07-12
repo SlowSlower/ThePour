@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/nav-bar";
+import packageJson from "../package.json";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,7 +45,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <NavBar version={getDeployVersion()} />
+        <NavBar
+          version={`${packageJson.version} · ${getDeployVersion()}`}
+        />
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
           {children}
         </main>

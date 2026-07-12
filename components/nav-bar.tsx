@@ -13,7 +13,7 @@ const NAV_LINKS = [
 ];
 
 interface NavBarProps {
-  /** Short deploy identifier (git commit SHA on Vercel, "dev" locally) shown
+  /** "package.json version · short commit SHA" (SHA is "dev" locally), shown
    * top-right so it's obvious which build is actually live. */
   version: string;
 }
@@ -67,9 +67,9 @@ export function NavBar({ version }: NavBarProps) {
           ) : null}
           <span
             className="font-mono text-xs text-muted-foreground"
-            title="현재 배포된 빌드 버전"
+            title="버전 · 배포된 커밋"
           >
-            v.{version}
+            v{version}
           </span>
         </div>
       </div>
