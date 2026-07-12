@@ -12,7 +12,13 @@ const NAV_LINKS = [
   { href: "/stats", label: "통계" },
 ];
 
-export function NavBar() {
+interface NavBarProps {
+  /** Short deploy identifier (git commit SHA on Vercel, "dev" locally) shown
+   * top-right so it's obvious which build is actually live. */
+  version: string;
+}
+
+export function NavBar({ version }: NavBarProps) {
   const { profile, loaded, clear } = useIdentity();
   const router = useRouter();
 
@@ -59,6 +65,12 @@ export function NavBar() {
               닉네임 입력
             </Button>
           ) : null}
+          <span
+            className="font-mono text-xs text-muted-foreground"
+            title="현재 배포된 빌드 버전"
+          >
+            v.{version}
+          </span>
         </div>
       </div>
     </header>

@@ -25,6 +25,14 @@ export const viewport: Viewport = {
   themeColor: "#7c2d12",
 };
 
+// Vercel injects these automatically for every build/deploy — no dashboard
+// config needed since this is read server-side, not bundled to the client.
+function getDeployVersion(): string {
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA;
+  if (sha) return sha.slice(0, 7);
+  return "dev";
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,7 +44,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <NavBar />
+        <NavBar version={getDeployVersion()} />
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
           {children}
         </main>
